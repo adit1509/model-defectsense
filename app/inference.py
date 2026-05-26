@@ -63,8 +63,7 @@ class InferenceService:
         results = self.model.predict(**predict_kwargs)
         result = results[0]
         detections: List[Detection] = []
-        defect_counts: Dict[str, int] = {name: 0 for name in self.class_names}
-        defect_counts["unknown"] = 0
+        defect_counts: Dict[str, int] = {}
 
         for box in result.boxes:
             x1, y1, x2, y2 = [float(v) for v in box.xyxy[0].tolist()]
@@ -74,10 +73,11 @@ class InferenceService:
                 class_name = self.class_names[class_id]
             else:
                 class_name = "unknown"
+                logger.warning("Unknown class id detected: %s", class_id)
             severity_label, severity_score, area_pct = compute_severity(
                 x1, y1, x2, y2, width, height, confidence
             )
-            defect_counts[class_name] += 1
+            defect_counts[class_name] = defect_counts.get(class_name, 0) + 1
             detections.append(
                 Detection(
                     class_id=class_id,
