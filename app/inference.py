@@ -14,11 +14,6 @@ from .utils import compute_severity, encode_image_base64
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CONF = float(os.getenv("CONF_THRESHOLD", "0.25"))
-DEFAULT_IMGSZ = int(os.getenv("IMG_SIZE", "640"))
-MODEL_DEVICE = os.getenv("MODEL_DEVICE")
-
-
 def _default_model_path() -> Path:
     base_dir = Path(__file__).resolve().parents[1]
     return base_dir / "runs" / "yolov8m_mbdd2025" / "weights" / "best.pt"
@@ -34,18 +29,34 @@ def _load_class_names(model: YOLO) -> List[str]:
 
 
 @dataclass
+class InferenceConfig:
+    conf_threshold: float
+    imgsz: int
+    device: str | None
+
+    @classmethod
+    def from_env(cls) -> "InferenceConfig":
+        return cls(
+            conf_threshold=float(os.getenv("CONF_THRESHOLD", "0.25")),
+            imgsz=int(os.getenv("IMG_SIZE", "640")),
+            device=os.getenv("MODEL_DEVICE"),
+        )
+
+
+@dataclass
 class InferenceService:
     model: YOLO
     class_names: List[str]
+    config: InferenceConfig
 
     def predict(self, image: np.ndarray) -> PredictResponse:
         height, width = image.shape[:2]
         results = self.model.predict(
             image,
-            conf=DEFAULT_CONF,
-            imgsz=DEFAULT_IMGSZ,
+            conf=self.config.conf_threshold,
+            imgsz=self.config.imgsz,
             verbose=False,
-            device=MODEL_DEVICE,
+            device=self.config.device,
         )
         result = results[0]
         detections: List[Detection] = []
@@ -63,7 +74,9 @@ class InferenceService:
             severity_label, severity_score, area_pct = compute_severity(
                 x1, y1, x2, y2, width, height, confidence
             )
-            defect_counts[class_name] = defect_counts.get(class_name, 0) + 1
+            if class_name not in defect_counts:
+                defect_counts[class_name] = 0
+            defect_counts[class_name] += 1
             detections.append(
                 Detection(
                     class_id=class_id,
@@ -100,7 +113,8 @@ def init_model() -> InferenceService:
     logger.info("Loading YOLOv8 model from %s", model_path)
     model = YOLO(str(model_path))
     class_names = _load_class_names(model)
-    _service = InferenceService(model=model, class_names=class_names)
+    config = InferenceConfig.from_env()
+    _service = InferenceService(model=model, class_names=class_names, config=config)
     return _service
 
 

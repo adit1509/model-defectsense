@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,10 +15,18 @@ from .utils import ALLOWED_IMAGE_TYPES, load_image_from_bytes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("defectsense")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_model()
+    logger.info("Model loaded and ready.")
+    yield
+
+
 app = FastAPI(
     title="DefectSense AI API",
     version="1.0.0",
     description="YOLOv8-powered building defect detection API.",
+    lifespan=lifespan,
 )
 
 
@@ -37,12 +46,6 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def startup() -> None:
-    init_model()
-    logger.info("Model loaded and ready.")
-
-
 @app.post("/api/v1/predict", response_model=PredictResponse)
 async def predict(file: UploadFile = File(...)) -> PredictResponse:
     if file.content_type not in ALLOWED_IMAGE_TYPES:
@@ -53,7 +56,7 @@ async def predict(file: UploadFile = File(...)) -> PredictResponse:
 
     payload = await file.read()
     try:
-        image, _, _ = load_image_from_bytes(payload)
+        image = load_image_from_bytes(payload)
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid image payload.") from exc
 

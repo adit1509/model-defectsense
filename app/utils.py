@@ -9,16 +9,18 @@ import numpy as np
 from PIL import Image
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+HIGH_SEVERITY_AREA_THRESHOLD = 0.15
+MEDIUM_SEVERITY_AREA_THRESHOLD = 0.05
+MIN_CONFIDENCE_THRESHOLD = 0.45
 
 
-def load_image_from_bytes(data: bytes) -> Tuple[np.ndarray, int, int]:
+def load_image_from_bytes(data: bytes) -> np.ndarray:
     if not data:
         raise ValueError("Empty image payload.")
     with Image.open(BytesIO(data)) as img:
         rgb = img.convert("RGB")
         np_img = np.array(rgb)
-    height, width = np_img.shape[:2]
-    return np_img, width, height
+    return np_img
 
 
 def encode_image_base64(image: np.ndarray) -> str:
@@ -38,9 +40,9 @@ def compute_severity(
     confidence: float,
 ) -> Tuple[str, float, float]:
     area_ratio = ((x2 - x1) * (y2 - y1)) / float(img_w * img_h)
-    if area_ratio > 0.15 or confidence < 0.45:
+    if area_ratio > HIGH_SEVERITY_AREA_THRESHOLD or confidence < MIN_CONFIDENCE_THRESHOLD:
         label = "HIGH"
-    elif area_ratio >= 0.05:
+    elif area_ratio >= MEDIUM_SEVERITY_AREA_THRESHOLD:
         label = "MEDIUM"
     else:
         label = "LOW"
