@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
@@ -104,19 +105,25 @@ class InferenceService:
 
 
 _service: InferenceService | None = None
+_service_lock = threading.Lock()
 
 
 def init_model() -> InferenceService:
     global _service
-    model_path = Path(os.getenv("MODEL_PATH", str(_default_model_path()))).expanduser()
-    if not model_path.exists():
-        raise FileNotFoundError(f"Model weights not found at: {model_path}")
-    logger.info("Loading YOLOv8 model from %s", model_path)
-    model = YOLO(str(model_path))
-    class_names = _load_class_names(model)
-    config = InferenceConfig.from_env()
-    _service = InferenceService(model=model, class_names=class_names, config=config)
-    return _service
+    if _service is not None:
+        return _service
+    with _service_lock:
+        if _service is not None:
+            return _service
+        model_path = Path(os.getenv("MODEL_PATH", str(_default_model_path()))).expanduser()
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model weights not found at: {model_path}")
+        logger.info("Loading YOLOv8 model from %s", model_path)
+        model = YOLO(str(model_path))
+        class_names = _load_class_names(model)
+        config = InferenceConfig.from_env()
+        _service = InferenceService(model=model, class_names=class_names, config=config)
+        return _service
 
 
 def get_service() -> InferenceService:

@@ -58,11 +58,9 @@ async def predict(file: UploadFile = File(...)) -> PredictResponse:
     payload = await file.read()
     try:
         image = load_image_from_bytes(payload)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid image payload: {exc}",
-        ) from exc
+    except Exception:
+        logger.exception("Failed to parse image payload.")
+        raise HTTPException(status_code=400, detail="Invalid image payload.")
 
     service = get_service()
     return await run_in_threadpool(service.predict, image)
