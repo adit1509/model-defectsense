@@ -1,0 +1,11 @@
+path: C:/Users/DELL/Desktop/aditya project/MBDD2025_split
+train: train/images
+val: val/images
+test: test/images
+nc: 5
+names:
+- crack
+- leakage
+- abscission
+- corrosion
+- bulge
