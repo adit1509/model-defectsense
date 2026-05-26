@@ -52,16 +52,19 @@ class InferenceService:
 
     def predict(self, image: np.ndarray) -> PredictResponse:
         height, width = image.shape[:2]
-        results = self.model.predict(
-            image,
-            conf=self.config.conf_threshold,
-            imgsz=self.config.imgsz,
-            verbose=False,
-            device=self.config.device,
-        )
+        predict_kwargs = {
+            "source": image,
+            "conf": self.config.conf_threshold,
+            "imgsz": self.config.imgsz,
+            "verbose": False,
+        }
+        if self.config.device:
+            predict_kwargs["device"] = self.config.device
+        results = self.model.predict(**predict_kwargs)
         result = results[0]
         detections: List[Detection] = []
         defect_counts: Dict[str, int] = {name: 0 for name in self.class_names}
+        defect_counts["unknown"] = 0
 
         for box in result.boxes:
             x1, y1, x2, y2 = [float(v) for v in box.xyxy[0].tolist()]
@@ -70,9 +73,7 @@ class InferenceService:
             if class_id < len(self.class_names):
                 class_name = self.class_names[class_id]
             else:
-                class_name = f"class_{class_id}"
-                if class_name not in defect_counts:
-                    defect_counts[class_name] = 0
+                class_name = "unknown"
             severity_label, severity_score, area_pct = compute_severity(
                 x1, y1, x2, y2, width, height, confidence
             )

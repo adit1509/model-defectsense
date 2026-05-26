@@ -40,7 +40,9 @@ def compute_severity(
     confidence: float,
 ) -> Tuple[str, float, float]:
     area_ratio = ((x2 - x1) * (y2 - y1)) / float(img_w * img_h)
-    if area_ratio > HIGH_SEVERITY_AREA_THRESHOLD or confidence < MIN_CONFIDENCE_THRESHOLD:
+    is_large = area_ratio > HIGH_SEVERITY_AREA_THRESHOLD
+    is_low_confidence = confidence < MIN_CONFIDENCE_THRESHOLD
+    if is_large or is_low_confidence:
         label = "HIGH"
     elif area_ratio >= MEDIUM_SEVERITY_AREA_THRESHOLD:
         label = "MEDIUM"
