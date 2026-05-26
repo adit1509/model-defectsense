@@ -15,6 +15,7 @@ from .utils import ALLOWED_IMAGE_TYPES, load_image_from_bytes
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("defectsense")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_model()

@@ -14,6 +14,7 @@ from .utils import compute_severity, encode_image_base64
 
 logger = logging.getLogger(__name__)
 
+
 def _default_model_path() -> Path:
     base_dir = Path(__file__).resolve().parents[1]
     return base_dir / "runs" / "yolov8m_mbdd2025" / "weights" / "best.pt"
@@ -66,16 +67,15 @@ class InferenceService:
             x1, y1, x2, y2 = [float(v) for v in box.xyxy[0].tolist()]
             confidence = float(box.conf[0])
             class_id = int(box.cls[0])
-            class_name = (
-                self.class_names[class_id]
-                if class_id < len(self.class_names)
-                else str(class_id)
-            )
+            if class_id < len(self.class_names):
+                class_name = self.class_names[class_id]
+            else:
+                class_name = f"class_{class_id}"
+                if class_name not in defect_counts:
+                    defect_counts[class_name] = 0
             severity_label, severity_score, area_pct = compute_severity(
                 x1, y1, x2, y2, width, height, confidence
             )
-            if class_name not in defect_counts:
-                defect_counts[class_name] = 0
             defect_counts[class_name] += 1
             detections.append(
                 Detection(
