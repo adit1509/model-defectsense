@@ -41,10 +41,10 @@ export default function DemoClient() {
     setPreviewUrl(URL.createObjectURL(selected));
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  const handleDrop = (dropEvent: DragEvent<HTMLDivElement>) => {
+    dropEvent.preventDefault();
     setDragActive(false);
-    const droppedFile = event.dataTransfer.files?.[0];
+    const droppedFile = dropEvent.dataTransfer.files?.[0];
     if (droppedFile) onSelectFile(droppedFile);
   };
 
