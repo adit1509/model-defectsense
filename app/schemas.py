@@ -20,7 +20,10 @@ class Severity(BaseModel):
 
 class Detection(BaseModel):
     class_id: int
-    class_name: str
+    class_name: str = Field(
+        ...,
+        description="Model class name or 'unknown' if not mapped.",
+    )
     confidence: float
     bbox: BoundingBox
     severity: Severity

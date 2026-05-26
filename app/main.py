@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from PIL import UnidentifiedImageError
 from starlette.concurrency import run_in_threadpool
 
 from .inference import get_service, init_model
@@ -58,7 +59,7 @@ async def predict(file: UploadFile = File(...)) -> PredictResponse:
     payload = await file.read()
     try:
         image = load_image_from_bytes(payload)
-    except Exception:
+    except (UnidentifiedImageError, ValueError, OSError):
         logger.exception("Failed to parse image payload.")
         raise HTTPException(status_code=400, detail="Invalid image payload.")
 
