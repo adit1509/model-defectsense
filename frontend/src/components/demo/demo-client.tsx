@@ -30,7 +30,7 @@ export default function DemoClient() {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  const onSelectFile = (selected: File | null) => {
+  const onSelectFile = (selected: File | null) => {console.log("FILE SELECTED" , selected);
     if (!selected) return;
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
